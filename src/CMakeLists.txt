@@ -10,7 +10,8 @@ set(CMAKE_VERBOSE_MAKEFILE off)
 set(SOURCE_FILES
     main.c
     collision.c
-    bitutils.c)
+    bitutils.c
+    hamming_code.c)
 
 add_executable(collider ${SOURCE_FILES})
 

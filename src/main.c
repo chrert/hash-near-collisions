@@ -7,8 +7,12 @@
 #include <time.h>
 
 #include "configuration.h"
+#include "bitutils.h"
 #include "md5/md5.h"
 #include "collision.h"
+#include "hamming_code.h"
+
+void hamming_truncated_md5(uint8_t const *input, size_t input_len, uint8_t output[TRUNCATED_SIZE]);
 
 /**
  * @brief Computes a truncated md5 hash.
@@ -38,6 +42,7 @@ void sprint_bytes_hex(uint8_t const bytes[TRUNCATED_SIZE], hex_str str);
 
 int main(int argc, char *argv[])
 {
+
   struct timespec start_time, end_time;
   timespec_get(&start_time, TIME_UTC);
 
@@ -51,6 +56,23 @@ int main(int argc, char *argv[])
     y0[i] = rand();
   }
 
+//  uint8_t out[TRUNCATED_SIZE];
+//  timespec_get(&start_time, TIME_UTC);
+//  for (size_t i = 0; i < 50000000; ++i)
+//  {
+//    truncated_md5(y0, TRUNCATED_SIZE, out);
+//  }
+//  timespec_get(&end_time, TIME_UTC);
+//  printf("truncated_md5:\t%ld seconds\n", end_time.tv_sec - start_time.tv_sec);
+
+//  timespec_get(&start_time, TIME_UTC);
+//  for (size_t i = 0; i < 50000000; ++i)
+//  {
+//    hamming_truncated_md5(y0, TRUNCATED_SIZE, out);
+//  }
+//  timespec_get(&end_time, TIME_UTC);
+//  printf("hamming_truncated_md5:\t%ld seconds\n", end_time.tv_sec - start_time.tv_sec);
+
   hex_str y0_str;
   sprint_bytes_hex(y0, y0_str);
   printf("Random y0: %s\n", y0_str);
@@ -59,7 +81,7 @@ int main(int argc, char *argv[])
   uint64_t lambda, mu;
   uint8_t m1[TRUNCATED_SIZE];
   uint8_t m2[TRUNCATED_SIZE];
-  brents_cycle_find(TRUNCATED_SIZE, y0, truncated_md5, brents_power_updated, &lambda, &mu, m1, m2);
+  brents_cycle_find(TRUNCATED_SIZE, y0, hamming_truncated_md5, brents_power_updated, &lambda, &mu, m1, m2);
 
   printf("lambda: %" PRIu64 "\n", lambda);
   printf("mu:     %" PRIu64 "\n", mu);
@@ -84,12 +106,28 @@ int main(int argc, char *argv[])
   else
   {
     printf("Fail!\n");
+    printf("Hamming distance: %u\n", hamming_distance_bytes(h1, h2, TRUNCATED_SIZE));
   }
 
   timespec_get(&end_time, TIME_UTC);
   printf("Computation took %ld seconds...\n", end_time.tv_sec - start_time.tv_sec);
 
   return 0;
+}
+
+void hamming_truncated_md5(uint8_t const *input, size_t input_len, uint8_t output[TRUNCATED_SIZE])
+{
+  truncated_md5(input, input_len, output);
+
+  uint64_t h;
+
+  for (size_t i = 0; i < 2; ++i)
+  {
+    h = 0;
+    memcpy(&h, output + (i * 4), 4);
+    hamming_correct_inplace(&h, 5);
+    memcpy(output + (i * 4), &h, 4);
+  }
 }
 
 /**

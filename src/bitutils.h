@@ -3,13 +3,31 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
+
+/**
+ * @brief Returns the bit of the given byte
+ * @param byte
+ * @param bit
+ * @return
+ */
+extern bool get_bit(uint8_t byte, size_t bit);
+
+/**
+ * @brief Returns the bit of the given byte buffer
+ * @param bytes
+ * @param bit
+ * @return
+ */
+extern bool get_bit_bytes(uint8_t const *bytes, size_t bit);
+
 
 /**
  * @brief Computes the hamming weight of a byte
  * @param byte
  * @return
  */
-unsigned int hamming_weight_byte(uint8_t byte);
+extern unsigned int hamming_weight_byte(uint8_t byte);
 
 /**
  * @brief Computes the hamming weight of a byte buffer
@@ -17,7 +35,7 @@ unsigned int hamming_weight_byte(uint8_t byte);
  * @param len
  * @return
  */
-unsigned int hamming_weight_bytes(uint8_t *bytes, size_t len);
+unsigned int hamming_weight_bytes(uint8_t const *bytes, size_t len);
 
 /**
  * @brief Computes the hamming distance betweeen two bytes
@@ -25,7 +43,7 @@ unsigned int hamming_weight_bytes(uint8_t *bytes, size_t len);
  * @param byte2
  * @return
  */
-unsigned int hamming_distance_byte(uint8_t byte1, uint8_t byte2);
+extern unsigned int hamming_distance_byte(uint8_t byte1, uint8_t byte2);
 
 /**
  * @brief Computes the hamming distance between two byte buffers
@@ -34,6 +52,6 @@ unsigned int hamming_distance_byte(uint8_t byte1, uint8_t byte2);
  * @param len
  * @return
  */
-unsigned int hamming_distance_bytes(uint8_t *bytes1, uint8_t *bytes2, size_t len);
+unsigned int hamming_distance_bytes(uint8_t const *bytes1, uint8_t const *bytes2, size_t len);
 
 #endif

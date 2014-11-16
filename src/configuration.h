@@ -4,6 +4,6 @@
 /**
  * The size of the truncated md5 hash in bytes
  */
-#define TRUNCATED_SIZE 32/8
+#define TRUNCATED_SIZE 64/8
 
 #endif // CONFIGURATION_H

@@ -12,7 +12,7 @@ const uint64_t PARITY_MASKS[] =
   0xffffffff00000000UL
 };
 
-inline bool parity(uint64_t v)
+bool parity(uint64_t v)
 {
   v ^= v >> 1;
   v ^= v >> 2;

@@ -23,13 +23,7 @@ void hamming_truncated_md5(uint8_t const *input, size_t input_len, uint8_t outpu
 void truncated_md5(uint8_t const *input, size_t input_len, uint8_t output[TRUNCATED_SIZE]);
 
 /**
- * @brief The callback of brent's algorithm. Print progress.
- * @param power
- */
-void brents_power_updated(unsigned int power);
-
-/**
- * @brief A string for a hex representation. Use in conjunction with sprint_bytes_hex()
+ * @brief A string for a hex representation. Used in conjunction with sprint_bytes_hex()
  */
 typedef char hex_str[3 * TRUNCATED_SIZE];
 
@@ -40,9 +34,37 @@ typedef char hex_str[3 * TRUNCATED_SIZE];
  */
 void sprint_bytes_hex(uint8_t const bytes[TRUNCATED_SIZE], hex_str str);
 
+/**
+ * @brief perform_brent
+ */
+void perform_brent();
+
+/**
+ * @brief The callback of brent's algorithm. Print progress.
+ * @param power
+ */
+void brents_power_updated(unsigned int power);
+
+/**
+ * @brief perform_dp
+ */
+void perform_dp();
+
+/**
+ * @brief dp_found_dp
+ * @param trail
+ * @param possibleCollision
+ */
+void dp_found_dp(dp_trail_t *trail, bool possibleCollision);
+
 int main(int argc, char *argv[])
 {
+  perform_brent();
+  return 0;
+}
 
+void perform_brent()
+{
   struct timespec start_time, end_time;
   timespec_get(&start_time, TIME_UTC);
 
@@ -81,7 +103,7 @@ int main(int argc, char *argv[])
   uint64_t lambda, mu;
   uint8_t m1[TRUNCATED_SIZE];
   uint8_t m2[TRUNCATED_SIZE];
-  brents_cycle_find(TRUNCATED_SIZE, y0, hamming_truncated_md5, brents_power_updated, &lambda, &mu, m1, m2);
+  brents_cycle_find(TRUNCATED_SIZE, y0, hamming_truncated_md5, &lambda, &mu, m1, m2, brents_power_updated);
 
   printf("lambda: %" PRIu64 "\n", lambda);
   printf("mu:     %" PRIu64 "\n", mu);
@@ -111,8 +133,17 @@ int main(int argc, char *argv[])
 
   timespec_get(&end_time, TIME_UTC);
   printf("Computation took %ld seconds...\n", end_time.tv_sec - start_time.tv_sec);
+}
 
-  return 0;
+void brents_power_updated(unsigned int power)
+{
+  printf("Checked cycle length 2^%u\n", power);
+  fflush(stdout);
+}
+
+void perform_dp()
+{
+  //
 }
 
 void hamming_truncated_md5(uint8_t const *input, size_t input_len, uint8_t output[TRUNCATED_SIZE])
@@ -155,11 +186,5 @@ void sprint_bytes_hex(uint8_t const bytes[TRUNCATED_SIZE], hex_str str)
       str += sprintf(str, " ");
     }
   }
-}
-
-void brents_power_updated(unsigned int power)
-{
-  printf("Checked cycle length 2^%u\n", power);
-  fflush(stdout);
 }
 

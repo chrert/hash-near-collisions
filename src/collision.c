@@ -3,7 +3,9 @@
 #include <string.h>
 #include <math.h>
 #include <pthread.h>
+#include <caca_conio.h>
 #include "dp_hash_table.h"
+#include "bitutils.h"
 
 //----------------------------------------------------------------
 // BRENTS
@@ -82,25 +84,80 @@ typedef struct
 
 void * trail_thread(void *arg)
 {
-  TRAIL_THREAD_DATA const *data = (TRAIL_THREAD_DATA const *) arg;
+  TRAIL_THREAD_DATA *data = (TRAIL_THREAD_DATA *) arg;
 
   uint8_t y0[data->hash_len];
+  search:
   data->rnd(data->hash_len, y0);
 
   uint8_t y[data->hash_len];
   memcpy(y, y0, data->hash_len);
   bool dp_found = false;
+  uint64_t l = 0;
 
   do
   {
     data->h(y, data->hash_len, y);
+    ++l;
 
-    // TODO: check if dp was found
+    // TODO: stop if too long
+
+    dp_found = true;
+    for (unsigned int i = 0; dp_found && i < data->num_leading_zeros; ++i) {
+      unsigned int byte_i = i / 8;
+      unsigned int bit_i = i % 8;
+      if (get_bit(y[byte_i], 7-bit_i)) {
+        dp_found = false;
+      }
+    }
 
   } while (! dp_found);
 
-  // TODO: check if dp was already found (by a different y0)
-  // and compute collision if possible (no pseudo collision)
+  dp_trail_t *trail;
+  if (! dp_hash_table_find(&(data->dp_hash_table), y, data->hash_len, &trail)) {
+    trail = dp_hash_table_add(&(data->dp_hash_table), y0, data->hash_len, y, data->hash_len, l);
+    if (data->point_found_callback) {
+      data->point_found_callback(trail, false);
+    }
+  } else {
+    if (data->point_found_callback) {
+      dp_trail_t *trailTmp = (dp_trail_t *) malloc(sizeof(dp_trail_t));
+      trailTmp->y0 = (uint8_t *) malloc(data->hash_len);
+      memcpy(trailTmp->y0, y0, data->hash_len);
+      trailTmp->dp = (uint8_t *) malloc(data->hash_len);
+      memcpy(trailTmp->dp, y, data->hash_len);
+      trailTmp->l = l;
+      data->point_found_callback(trailTmp, true);
+      free(trailTmp);
+    }
+
+    uint8_t y0_longer[data->hash_len], y0_smaller[data->hash_len];
+    uint64_t length_diff;
+    if (trail->l > l) {
+      memcpy(y0_longer, trail->y0, data->hash_len);
+      memcpy(y0_smaller, y0, data->hash_len);
+      length_diff = trail->l - l;
+    } else {
+      memcpy(y0_longer, y0, data->hash_len);
+      memcpy(y0_smaller, trail->y0, data->hash_len);
+      length_diff = l - trail->l;
+    }
+
+    for (uint64_t i = 0; i < length_diff; ++i) {
+      data->h(y0_longer, data->hash_len, y0_longer);
+    }
+
+    if (memcmp(y0_longer, y0_smaller, data->hash_len) == 0) {
+      // robin hood
+    } else {
+      while (memcmp(y0_longer, y0_smaller, data->hash_len) != 0) {
+        data->h(y0_longer, data->hash_len, y0_longer);
+        data->h(y0_smaller, data->hash_len, y0_smaller);
+      }
+    }
+  }
+
+  goto search;
 
   return NULL;
 }

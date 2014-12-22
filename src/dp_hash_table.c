@@ -9,16 +9,21 @@ void dp_hash_table_init(dp_hash_table_t *table)
   pthread_mutex_init(&(table->mutex), NULL);
 }
 
-void dp_hash_table_find(dp_hash_table_t *table, uint8_t const *dp, size_t dp_len, dp_trail_t **dp_trail)
+bool dp_hash_table_find(dp_hash_table_t *table, uint8_t const *dp, size_t dp_len, dp_trail_t **dp_trail)
 {
-  dp_hash_entry_t *entry;
+  dp_hash_entry_t *entry = NULL;
   pthread_mutex_lock(&(table->mutex));
   HASH_FIND(hh, table->entries, dp, dp_len, entry);
   pthread_mutex_unlock(&(table->mutex));
-  *dp_trail = &(entry->dp_trail);
+  if (entry) {
+    *dp_trail = &(entry->dp_trail);
+    return true;
+  } else {
+    return false;
+  }
 }
 
-void dp_hash_table_add(dp_hash_table_t *table, uint8_t const *y0, size_t y0_len, uint8_t const *dp, size_t dp_len, uint64_t l)
+dp_trail_t * dp_hash_table_add(dp_hash_table_t *table, uint8_t const *y0, size_t y0_len, uint8_t const *dp, size_t dp_len, uint64_t l)
 {
   dp_hash_entry_t *entry = (dp_hash_entry_t *) malloc(sizeof(dp_hash_entry_t));
 
@@ -33,6 +38,8 @@ void dp_hash_table_add(dp_hash_table_t *table, uint8_t const *y0, size_t y0_len,
   pthread_mutex_lock(&(table->mutex));
   HASH_ADD_KEYPTR(hh, table->entries, entry->dp_trail.dp, dp_len, entry);
   pthread_mutex_unlock(&(table->mutex));
+
+  return &(entry->dp_trail);
 }
 
 void dp_hash_table_remove(dp_hash_table_t *table, uint8_t const *dp, size_t dp_len)

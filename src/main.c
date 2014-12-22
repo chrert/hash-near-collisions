@@ -55,28 +55,57 @@ void perform_dp();
  * @param trail
  * @param possibleCollision
  */
-void dp_found_dp(dp_trail_t *trail, bool possibleCollision);
+void dp_found_dp(dp_trail_t *trail, bool possibleCollision) {
+  printf("Point found!\n");
+  hex_str str_dp, str_y0;
+  sprint_bytes_hex(trail->y0, str_y0);
+  sprint_bytes_hex(trail->dp, str_dp);
+  printf("%s -> %s\n", str_y0, str_dp);
+
+  fflush(stdout);
+
+  if (possibleCollision) {
+    printf("Possible collision detected!\n");
+    exit(0);
+  }
+}
+
+void generate_random_bytes(size_t size, uint8_t bytes[size]) {
+  for (int i = 0; i < TRUNCATED_SIZE; ++i) {
+    bytes[i] = random();
+  }
+}
 
 int main(int argc, char *argv[])
 {
-  perform_brent();
+  if (argc != 2) {
+    printf("Usage: collider method\n");
+    return -1;
+  }
+
+  srandom((unsigned int) time(NULL));
+
+  if (strcmp(argv[1], "b") == 0) {
+    perform_brent();
+  } else if (strcmp(argv[1], "dp") == 0) {
+    perform_dp();
+  } else {
+    printf("Unknown method!\n");
+  }
+
   return 0;
 }
+
+
 
 void perform_brent()
 {
   struct timespec start_time, end_time;
   timespec_get(&start_time, TIME_UTC);
 
-  // initialize rand
-  srand((unsigned int) time(NULL));
-
   // generate random y0
   uint8_t y0[TRUNCATED_SIZE];
-  for (int i = 0; i < TRUNCATED_SIZE; ++i)
-  {
-    y0[i] = rand();
-  }
+  generate_random_bytes(TRUNCATED_SIZE, y0);
 
 //  uint8_t out[TRUNCATED_SIZE];
 //  timespec_get(&start_time, TIME_UTC);
@@ -143,7 +172,9 @@ void brents_power_updated(unsigned int power)
 
 void perform_dp()
 {
-  //
+  uint8_t m1[TRUNCATED_SIZE];
+  uint8_t m2[TRUNCATED_SIZE];
+  dp_find_collision_parallel(TRUNCATED_SIZE, truncated_md5, generate_random_bytes, 4, 25, m1, m2, dp_found_dp);
 }
 
 void hamming_truncated_md5(uint8_t const *input, size_t input_len, uint8_t output[TRUNCATED_SIZE])

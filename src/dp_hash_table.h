@@ -24,9 +24,9 @@ typedef struct
 
 void dp_hash_table_init(dp_hash_table_t *table);
 
-void dp_hash_table_find(dp_hash_table_t *table, uint8_t const *dp, size_t dp_len, dp_trail_t **dp_trail);
+bool dp_hash_table_find(dp_hash_table_t *table, uint8_t const *dp, size_t dp_len, dp_trail_t **dp_trail);
 
-void dp_hash_table_add(dp_hash_table_t *table, uint8_t const *y0, size_t y0_len, uint8_t const *dp, size_t dp_len, uint64_t l);
+dp_trail_t *dp_hash_table_add(dp_hash_table_t *table, uint8_t const *y0, size_t y0_len, uint8_t const *dp, size_t dp_len, uint64_t l);
 
 void dp_hash_table_remove(dp_hash_table_t *table, uint8_t const *dp, size_t dp_len);
 

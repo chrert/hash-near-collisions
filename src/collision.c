@@ -3,7 +3,6 @@
 #include <string.h>
 #include <math.h>
 #include <pthread.h>
-#include <caca_conio.h>
 #include "dp_hash_table.h"
 #include "bitutils.h"
 

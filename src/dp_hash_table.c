@@ -1,4 +1,5 @@
 #include "dp_hash_table.h"
+#include "collision.h"
 
 #include <stdlib.h>
 
@@ -40,5 +41,8 @@ void dp_hash_table_remove(dp_hash_table_t *table, uint8_t const *dp, size_t dp_l
   pthread_mutex_lock(&(table->mutex));
   HASH_FIND(hh, table->entries, dp, dp_len, entry);
   HASH_DEL(table->entries, entry);
+  free(entry->dp_trail.y0);
+  free(entry->dp_trail.dp);
+  free(entry);
   pthread_mutex_unlock(&(table->mutex));
 }

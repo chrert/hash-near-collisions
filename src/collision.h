@@ -32,7 +32,7 @@ typedef void (*brents_callback_t)(unsigned int power);
  * @param power_step_callback A pointer to a callback function, that will be called on
  * every power step (2^1, 2^2, 2^3, ...)
  */
-void brents_cycle_find(size_t len, uint8_t const y0[len],
+void brents_cycle_find_collision(size_t len, uint8_t const y0[len],
                        hash_function_t h,
                        uint64_t *lambda, uint64_t *mu,
                        uint8_t m1[len], uint8_t m2[len],

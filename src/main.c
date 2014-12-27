@@ -4,7 +4,6 @@
 #include <string.h>
 #include <inttypes.h>
 #include <math.h>
-#include <time.h>
 
 #include "configuration.h"
 #include "bitutils.h"
@@ -66,13 +65,12 @@ void dp_found_dp(dp_trail_t *trail, bool possibleCollision) {
 
   if (possibleCollision) {
     printf("Possible collision detected!\n");
-    exit(0);
   }
 }
 
 void generate_random_bytes(size_t size, uint8_t bytes[size]) {
   for (int i = 0; i < TRUNCATED_SIZE; ++i) {
-    bytes[i] = random();
+    bytes[i] = rand();
   }
 }
 
@@ -83,7 +81,7 @@ int main(int argc, char *argv[])
     return -1;
   }
 
-  srandom((unsigned int) time(NULL));
+  srand((unsigned int) time(NULL));
 
   if (strcmp(argv[1], "b") == 0) {
     perform_brent();
@@ -132,7 +130,7 @@ void perform_brent()
   uint64_t lambda, mu;
   uint8_t m1[TRUNCATED_SIZE];
   uint8_t m2[TRUNCATED_SIZE];
-  brents_cycle_find(TRUNCATED_SIZE, y0, hamming_truncated_md5, &lambda, &mu, m1, m2, brents_power_updated);
+  brents_cycle_find_collision(TRUNCATED_SIZE, y0, hamming_truncated_md5, &lambda, &mu, m1, m2, brents_power_updated);
 
   printf("lambda: %" PRIu64 "\n", lambda);
   printf("mu:     %" PRIu64 "\n", mu);
@@ -175,6 +173,21 @@ void perform_dp()
   uint8_t m1[TRUNCATED_SIZE];
   uint8_t m2[TRUNCATED_SIZE];
   dp_find_collision_parallel(TRUNCATED_SIZE, truncated_md5, generate_random_bytes, 4, 25, m1, m2, dp_found_dp);
+
+  hex_str m1_str;
+  hex_str m2_str;
+  sprint_bytes_hex(m1, m1_str);
+  sprint_bytes_hex(m2, m2_str);
+
+  uint8_t h1[TRUNCATED_SIZE];
+  uint8_t h2[TRUNCATED_SIZE];
+  truncated_md5(m1, TRUNCATED_SIZE, h1);
+  truncated_md5(m2, TRUNCATED_SIZE, h2);
+
+  unsigned int hd = hamming_distance_bytes(h1, h2, TRUNCATED_SIZE);
+  printf("Collision found with hamming distance %u\n", hd);
+  printf("m1: %s\n", m1_str);
+  printf("m2: %s\n", m2_str);
 }
 
 void hamming_truncated_md5(uint8_t const *input, size_t input_len, uint8_t output[TRUNCATED_SIZE])

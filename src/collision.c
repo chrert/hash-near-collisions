@@ -3,6 +3,7 @@
 #include <string.h>
 #include <math.h>
 #include <pthread.h>
+
 #include "dp_hash_table.h"
 #include "bitutils.h"
 
@@ -10,7 +11,7 @@
 // BRENTS
 //----------------------------------------------------------------
 
-void brents_cycle_find(size_t len, uint8_t const y0[len],
+void brents_cycle_find_collision(size_t len, uint8_t const y0[len],
                        hash_function_t h,
                        uint64_t *lambda, uint64_t *mu,
                        uint8_t m1[len], uint8_t m2[len],
@@ -79,6 +80,11 @@ typedef struct
 
   dp_hash_table_t dp_hash_table;
 
+  pthread_mutex_t possible_collision_mutex;
+  pthread_cond_t possible_collision_cv;
+  dp_trail_t *collision_trail_1;
+  dp_trail_t *collision_trail_2;
+
 } TRAIL_THREAD_DATA;
 
 void * trail_thread(void *arg)
@@ -127,32 +133,13 @@ void * trail_thread(void *arg)
       memcpy(trailTmp->dp, y, data->hash_len);
       trailTmp->l = l;
       data->point_found_callback(trailTmp, true);
-      free(trailTmp);
-    }
+      //free(trailTmp); TODO
 
-    uint8_t y0_longer[data->hash_len], y0_smaller[data->hash_len];
-    uint64_t length_diff;
-    if (trail->l > l) {
-      memcpy(y0_longer, trail->y0, data->hash_len);
-      memcpy(y0_smaller, y0, data->hash_len);
-      length_diff = trail->l - l;
-    } else {
-      memcpy(y0_longer, y0, data->hash_len);
-      memcpy(y0_smaller, trail->y0, data->hash_len);
-      length_diff = l - trail->l;
-    }
-
-    for (uint64_t i = 0; i < length_diff; ++i) {
-      data->h(y0_longer, data->hash_len, y0_longer);
-    }
-
-    if (memcmp(y0_longer, y0_smaller, data->hash_len) == 0) {
-      // robin hood
-    } else {
-      while (memcmp(y0_longer, y0_smaller, data->hash_len) != 0) {
-        data->h(y0_longer, data->hash_len, y0_longer);
-        data->h(y0_smaller, data->hash_len, y0_smaller);
-      }
+      pthread_mutex_lock(&(data->possible_collision_mutex));
+      data->collision_trail_1 = trailTmp;
+      data->collision_trail_2 = trail;
+      pthread_cond_signal(&(data->possible_collision_cv));
+      pthread_mutex_unlock(&(data->possible_collision_mutex));
     }
   }
 
@@ -177,14 +164,60 @@ void dp_find_collision_parallel(size_t hash_len, hash_function_t h, random_byte_
 
   dp_hash_table_init(&(trail_thread_data.dp_hash_table));
 
+  pthread_mutex_init(&(trail_thread_data.possible_collision_mutex), NULL);
+  pthread_cond_init(&(trail_thread_data.possible_collision_cv), NULL);
+  pthread_mutex_lock(&(trail_thread_data.possible_collision_mutex));
+
   pthread_t trail_threads[num_threads];
   for (size_t i = 0; i < num_threads; ++i)
   {
     pthread_create(&(trail_threads[i]), NULL, trail_thread, (void*) &trail_thread_data);
   }
 
+  bool collision_found = false;
+  while (! collision_found)
+  {
+    pthread_cond_wait(&(trail_thread_data.possible_collision_cv), &(trail_thread_data.possible_collision_mutex));
+
+    uint8_t y0_longer[trail_thread_data.hash_len], y0_smaller[trail_thread_data.hash_len];
+    uint64_t length_diff;
+    if (trail_thread_data.collision_trail_1->l > trail_thread_data.collision_trail_2->l) {
+      memcpy(y0_longer, trail_thread_data.collision_trail_1->y0, trail_thread_data.hash_len);
+      memcpy(y0_smaller, trail_thread_data.collision_trail_2->y0, trail_thread_data.hash_len);
+      length_diff = trail_thread_data.collision_trail_1->l - trail_thread_data.collision_trail_2->l;
+    } else {
+      memcpy(y0_longer, trail_thread_data.collision_trail_2->y0, trail_thread_data.hash_len);
+      memcpy(y0_smaller, trail_thread_data.collision_trail_1->y0, trail_thread_data.hash_len);
+      length_diff = trail_thread_data.collision_trail_2->l - trail_thread_data.collision_trail_1->l;
+    }
+
+    for (uint64_t i = 0; i < length_diff; ++i) {
+      trail_thread_data.h(y0_longer, trail_thread_data.hash_len, y0_longer);
+    }
+
+    if (memcmp(y0_longer, y0_smaller, trail_thread_data.hash_len) == 0) {
+      // robin hood
+    } else {
+      collision_found = true;
+      while (memcmp(y0_longer, y0_smaller, trail_thread_data.hash_len) != 0) {
+        memcpy(m1, y0_longer, trail_thread_data.hash_len);
+        memcpy(m2, y0_smaller, trail_thread_data.hash_len);
+        trail_thread_data.h(y0_longer, trail_thread_data.hash_len, y0_longer);
+        trail_thread_data.h(y0_smaller, trail_thread_data.hash_len, y0_smaller);
+      }
+    }
+  }
+  pthread_mutex_unlock(&(trail_thread_data.possible_collision_mutex));
+
+  for (size_t i = 0; i < num_threads; ++i)
+  {
+    pthread_cancel(trail_threads[i]);
+  }
+
   for (size_t i = 0; i < num_threads; ++i)
   {
     pthread_join(trail_threads[i], NULL);
   }
+
+  return;
 }

@@ -9,7 +9,8 @@ set(CMAKE_VERBOSE_MAKEFILE off)
 
 set(SOURCE_FILES
     main.c
-    collision.c
+    brents.c
+    distinguished_points.c
     bitutils.c
     hamming_code.c
     dp_hash_table.c)

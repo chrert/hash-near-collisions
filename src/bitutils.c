@@ -1,15 +1,5 @@
 #include "bitutils.h"
 
-inline bool get_bit(uint8_t byte, size_t bit)
-{
-  return byte & (1 << bit);
-}
-
-inline bool get_bit_bytes(uint8_t const *bytes, size_t bit)
-{
-  return get_bit(bytes[bit / 8], bit % 8);
-}
-
 inline unsigned int hamming_weight_byte(uint8_t x)
 {
   return ((0x876543210 >>
@@ -42,3 +32,85 @@ unsigned int hamming_distance_bytes(const uint8_t *bytes1, const uint8_t *bytes2
   }
   return hd;
 }
+
+unsigned int count_leading_zeros(uint32_t x)
+{
+#if __GNUC__
+#if __SIZEOF_LONG__ == 32/8
+  return __builtin_clzl(x);
+#elif __SIZEOF_INT__ == 32/8
+  return __builtin_clz(x);
+#else
+#error no bultin clz for 32-bit word
+#endif
+#else
+  static uint8_t const clz_lkup[] = {
+      32U, 31U, 30U, 30U, 29U, 29U, 29U, 29U,
+      28U, 28U, 28U, 28U, 28U, 28U, 28U, 28U,
+      27U, 27U, 27U, 27U, 27U, 27U, 27U, 27U,
+      27U, 27U, 27U, 27U, 27U, 27U, 27U, 27U,
+      26U, 26U, 26U, 26U, 26U, 26U, 26U, 26U,
+      26U, 26U, 26U, 26U, 26U, 26U, 26U, 26U,
+      26U, 26U, 26U, 26U, 26U, 26U, 26U, 26U,
+      26U, 26U, 26U, 26U, 26U, 26U, 26U, 26U,
+      25U, 25U, 25U, 25U, 25U, 25U, 25U, 25U,
+      25U, 25U, 25U, 25U, 25U, 25U, 25U, 25U,
+      25U, 25U, 25U, 25U, 25U, 25U, 25U, 25U,
+      25U, 25U, 25U, 25U, 25U, 25U, 25U, 25U,
+      25U, 25U, 25U, 25U, 25U, 25U, 25U, 25U,
+      25U, 25U, 25U, 25U, 25U, 25U, 25U, 25U,
+      25U, 25U, 25U, 25U, 25U, 25U, 25U, 25U,
+      25U, 25U, 25U, 25U, 25U, 25U, 25U, 25U,
+      24U, 24U, 24U, 24U, 24U, 24U, 24U, 24U,
+      24U, 24U, 24U, 24U, 24U, 24U, 24U, 24U,
+      24U, 24U, 24U, 24U, 24U, 24U, 24U, 24U,
+      24U, 24U, 24U, 24U, 24U, 24U, 24U, 24U,
+      24U, 24U, 24U, 24U, 24U, 24U, 24U, 24U,
+      24U, 24U, 24U, 24U, 24U, 24U, 24U, 24U,
+      24U, 24U, 24U, 24U, 24U, 24U, 24U, 24U,
+      24U, 24U, 24U, 24U, 24U, 24U, 24U, 24U,
+      24U, 24U, 24U, 24U, 24U, 24U, 24U, 24U,
+      24U, 24U, 24U, 24U, 24U, 24U, 24U, 24U,
+      24U, 24U, 24U, 24U, 24U, 24U, 24U, 24U,
+      24U, 24U, 24U, 24U, 24U, 24U, 24U, 24U,
+      24U, 24U, 24U, 24U, 24U, 24U, 24U, 24U,
+      24U, 24U, 24U, 24U, 24U, 24U, 24U, 24U,
+      24U, 24U, 24U, 24U, 24U, 24U, 24U, 24U,
+      24U, 24U, 24U, 24U, 24U, 24U, 24U, 24U
+  };
+  uint32_t n;
+  if (x >= (1U << 16)) {
+      if (x >= (1U << 24)) {
+          n = 24U;
+      }
+      else {
+          n = 16U;
+      }
+  }
+  else {
+      if (x >= (1U << 8)) {
+          n = 8U;
+      }
+      else {
+          n = 0U;
+      }
+  }
+  return (uint32_t)clz_lkup[x >> n] - n;
+#endif
+}
+
+unsigned int count_trailing_zeros(uint32_t x)
+{
+#if __GNUC__
+#if __SIZEOF_LONG__ == 32/8
+  return __builtin_ctzl(x);
+#elif __SIZEOF_INT__ == 32/8
+  return __builtin_ctz(x);
+#else
+#error no bultin ctz for 32-bit word
+#endif
+#else
+#error missing portable implementation for tlz
+#endif
+}
+

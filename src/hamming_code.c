@@ -48,19 +48,49 @@ bool parity32(uint32_t v)
 #endif
 }
 
-bool hamming_correct_inplace(uint64_t *codeword, size_t parity_bits)
+bool parity16(uint16_t v)
 {
-  size_t e = 0;
-  for (size_t parity_i = 0; parity_i < parity_bits; ++parity_i)
-  {
-    e += (1 << parity_i) * parity64(*codeword & PARITY_MASKS[parity_i]);
-  }
-
-  if (e != 0)
-  {
-    *codeword ^= (1 << e);
-    return true;
-  }
-
-  return false;
+#if __GNUC__ > 0
+  return __builtin_parity(v);
+#else
+#error no builtin parity for 16-bit word
+#endif
 }
+
+bool parity8(uint8_t v)
+{
+#if __GNUC__ > 0
+  return __builtin_parity(v);
+#else
+#error no builtin parity for 8-bit word
+#endif
+}
+
+#ifndef GLUE
+#define GLUE_HELPER(x,y) x##y
+#define GLUE(x,y) GLUE_HELPER(x,y)
+#endif
+
+#ifndef GENERATE_HAMMING_CORRECT_INPLACE
+#define GENERATE_HAMMING_CORRECT_INPLACE(BITS, PARITY_BITS) \
+bool GLUE(hamming_correct_inplace, BITS) (uint8_t *codeword, size_t offset)\
+{\
+  GLUE(GLUE(uint, BITS), _t) *codeword_ptr = (GLUE(GLUE(uint, BITS), _t) *) (codeword + offset);\
+  size_t e = 0;\
+  for (size_t parity_i = 0; parity_i < PARITY_BITS; ++parity_i)\
+  {\
+    e += (1 << parity_i) * GLUE(parity,BITS)(*codeword_ptr & PARITY_MASKS[parity_i]);\
+  }\
+  if (e != 0)\
+  {\
+    *codeword_ptr ^= (1 << e);\
+    return true;\
+  }\
+  return false;\
+}
+#endif
+
+GENERATE_HAMMING_CORRECT_INPLACE(64, 6)
+GENERATE_HAMMING_CORRECT_INPLACE(32, 5)
+GENERATE_HAMMING_CORRECT_INPLACE(16, 4)
+GENERATE_HAMMING_CORRECT_INPLACE(8, 3)

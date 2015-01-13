@@ -97,8 +97,7 @@ int main(int argc, char *argv[])
     printf("mu:     %" PRIu64 "\n", mu);
 
   } else if (strcmp(argv[1], "dp") == 0) {
-    dp_find_collision_parallel(TRUNCATED_SIZE, hamming_truncated_md5, generate_random_bytes, 4, 15, m1, m2, dp_found_dp);
-
+    dp_find_collision_parallel(TRUNCATED_SIZE, hamming_truncated_md5, generate_random_bytes, 4, 15, m1, m2, NULL);
   } else {
     printf("Unknown method!\n");
     return -1;
@@ -131,8 +130,6 @@ void hamming_truncated_md5(uint8_t const *input, size_t input_len, uint8_t outpu
 {
   truncated_md5(input, input_len, output);
 
-  uint64_t h;
-
   /* FOR 88
   for (size_t i = 0; i < 5; ++i)
   {
@@ -150,10 +147,7 @@ void hamming_truncated_md5(uint8_t const *input, size_t input_len, uint8_t outpu
 
   for (size_t i = 0; i < 4; ++i)
   {
-    h = 0;
-    memcpy(&h, output + (i * 2), 2);
-    hamming_correct_inplace(&h, 4);
-    memcpy(output + (i * 2), &h, 2);
+    hamming_correct_inplace16(output, i * 2);
   }
 }
 

@@ -56,21 +56,20 @@ bool parity8(uint8_t v) {
 #endif
 }
 
-#ifndef GLUE
-#define GLUE_HELPER(x, y) x##y
-#define GLUE(x, y) GLUE_HELPER(x, y)
-#endif
-
 #ifndef GENERATE_HAMMING_CORRECT_INPLACE
+
+#define HAMMING_GLUE_HELPER(x, y) x##y
+#define HAMMING_GLUE(x, y) HAMMING_GLUE_HELPER(x, y)
+
 #define GENERATE_HAMMING_CORRECT_INPLACE(BITS, PARITY_BITS)                    \
-  bool GLUE(hamming_correct_inplace, BITS)(uint8_t * codeword,                 \
-                                           size_t offset) {                    \
-    GLUE(GLUE(uint, BITS), _t) *codeword_ptr =                                 \
-        (GLUE(GLUE(uint, BITS), _t) *)(codeword + offset);                     \
+  bool HAMMING_GLUE(hamming_correct_inplace, BITS)(uint8_t * codeword,         \
+                                                   size_t offset) {            \
+    HAMMING_GLUE(HAMMING_GLUE(uint, BITS), _t) *codeword_ptr =                 \
+        (HAMMING_GLUE(HAMMING_GLUE(uint, BITS), _t) *)(codeword + offset);     \
     size_t e = 0;                                                              \
     for (size_t parity_i = 0; parity_i < PARITY_BITS; ++parity_i) {            \
       e += (1 << parity_i) *                                                   \
-           GLUE(parity, BITS)(*codeword_ptr & PARITY_MASKS[parity_i]);         \
+           HAMMING_GLUE(parity, BITS)(*codeword_ptr & PARITY_MASKS[parity_i]); \
     }                                                                          \
     if (e != 0) {                                                              \
       *codeword_ptr ^= (1 << e);                                               \

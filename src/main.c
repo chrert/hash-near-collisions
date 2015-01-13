@@ -134,8 +134,12 @@ void hamming_truncated_md5(uint8_t const* input, size_t input_len,
                            uint8_t output[TRUNCATED_SIZE]) {
   truncated_md5(input, input_len, output);
 
-  for (size_t i = 0; i < 5; ++i) {
+  for (size_t i = 0; i < 2; ++i) {
     hamming_correct_inplace16(output, i * 2);
+  }
+
+  for (size_t i = 0; i < 8; ++i) {
+    hamming_correct_inplace8(output, 4 + i);
   }
 }
 

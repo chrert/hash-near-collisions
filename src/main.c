@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
 
   } else if (strcmp(argv[1], "dp") == 0) {
     dp_find_collision_parallel(TRUNCATED_SIZE, hamming_truncated_md5,
-                               generate_random_bytes, 4, 15, m1, m2, NULL);
+                               generate_random_bytes, 4, 74, m1, m2, NULL);
   } else {
     printf("Unknown method!\n");
     return -1;

@@ -5,7 +5,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-
 /**
 * @brief Perform correction on a hamming code word
 * @param codeword The codeword to be corrected of length code_length

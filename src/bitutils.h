@@ -35,7 +35,8 @@ extern unsigned int hamming_distance_byte(uint8_t byte1, uint8_t byte2);
  * @param len
  * @return
  */
-unsigned int hamming_distance_bytes(uint8_t const *bytes1, uint8_t const *bytes2, size_t len);
+unsigned int hamming_distance_bytes(uint8_t const *bytes1,
+                                    uint8_t const *bytes2, size_t len);
 
 /**
  * @brief Counts the number of leading zeros of a 32 bit word

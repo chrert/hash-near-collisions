@@ -4,11 +4,9 @@
 #include <string.h>
 
 void brents_cycle_find_collision(size_t len, uint8_t const y0[len],
-                       brents_hash_function_t h,
-                       uint64_t *lambda, uint64_t *mu,
-                       uint8_t m1[len], uint8_t m2[len],
-                       brents_callback_t power_step_callback)
-{
+                                 brents_hash_function_t h, uint64_t *lambda,
+                                 uint64_t *mu, uint8_t m1[len], uint8_t m2[len],
+                                 brents_callback_t power_step_callback) {
   uint8_t tortoise[len];
   memcpy(tortoise, y0, len);
 
@@ -19,13 +17,10 @@ void brents_cycle_find_collision(size_t len, uint8_t const y0[len],
   *lambda = 1;
 
   // find the length of the cycle (lambda)
-  while (memcmp(hare, tortoise, len) != 0)
-  {
-    if (power == *lambda)
-    {
-      if (power_step_callback)
-      {
-        power_step_callback((unsigned int) log2(power));
+  while (memcmp(hare, tortoise, len) != 0) {
+    if (power == *lambda) {
+      if (power_step_callback) {
+        power_step_callback((unsigned int)log2(power));
       }
 
       memcpy(tortoise, hare, len);
@@ -43,16 +38,15 @@ void brents_cycle_find_collision(size_t len, uint8_t const y0[len],
     h(hare, len, hare);
   }
 
-  // now both walk at the same speed, so they should meet at the collision point!
+  // now both walk at the same speed, so they should meet at the collision
+  // point!
   *mu = 0;
   memcpy(tortoise, y0, len);
-  while (memcmp(tortoise, hare, len) != 0)
-  {
+  while (memcmp(tortoise, hare, len) != 0) {
     memcpy(m1, hare, len);
     memcpy(m2, tortoise, len);
     h(hare, len, hare);
     h(tortoise, len, tortoise);
     ++(*mu);
   }
-
 }

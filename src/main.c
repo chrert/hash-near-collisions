@@ -130,22 +130,7 @@ void hamming_truncated_md5(uint8_t const *input, size_t input_len, uint8_t outpu
 {
   truncated_md5(input, input_len, output);
 
-  /* FOR 88
   for (size_t i = 0; i < 5; ++i)
-  {
-    h = 0;
-    memcpy(&h, output + (i * 2), 2);
-    hamming_correct_inplace(&h, 4);
-    memcpy(output + (i * 2), &h, 2);
-  }
-
-  h = 0;
-  memcpy(&h, output + (5 * 2), 1);
-  hamming_correct_inplace(&h, 3);
-  memcpy(output + (5 * 2), &h, 1);
-  */
-
-  for (size_t i = 0; i < 4; ++i)
   {
     hamming_correct_inplace16(output, i * 2);
   }

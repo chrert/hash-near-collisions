@@ -45,10 +45,13 @@ unsigned int hamming_distance_bytes(uint8_t const *bytes1,
  */
 unsigned int count_leading_zeros(uint32_t x);
 
+unsigned int count_leading_zeros_bytes(uint8_t *bytes, size_t len);
+
 /**
  * @brief Counts the number of training zeros of a 32 bit word
  * @param x
  * @return
  */
 unsigned int count_trailing_zeros(uint32_t x);
+
 #endif

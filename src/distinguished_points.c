@@ -33,6 +33,9 @@ void *trail_thread(void *arg) {
   uint64_t l;
   bool dp_found;
 
+  size_t zero_bytes = (data->num_leading_zeros / 8);
+  size_t bytes_to_check = zero_bytes + (data->num_leading_zeros % 8 != 0);
+
   while (true) {
     pthread_testcancel();
 
@@ -46,16 +49,15 @@ void *trail_thread(void *arg) {
       ++l;
       // TODO: stop if too long
 
-      uint32_t *leading32 = (uint32_t *)y;
-      dp_found = count_trailing_zeros(*leading32) >= data->num_leading_zeros;
+      dp_found = count_leading_zeros_bytes(y, bytes_to_check) >= data->num_leading_zeros;
 
     } while (!dp_found);
 
     dp_trail_t *trail;
     if (!dp_hash_table_find(&(data->dp_hash_table), y, data->hash_len,
                             &trail)) {
-      trail = dp_hash_table_add(&(data->dp_hash_table), y0, data->hash_len, y,
-                                data->hash_len, l);
+      trail = dp_hash_table_add(&(data->dp_hash_table), y0, data->hash_len, y + zero_bytes,
+                                data->hash_len - zero_bytes, l);
       if (data->point_found_callback) {
         data->point_found_callback(trail, false);
       }

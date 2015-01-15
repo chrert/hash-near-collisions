@@ -76,6 +76,20 @@ unsigned int count_leading_zeros(uint32_t x) {
 #endif
 }
 
+unsigned int count_leading_zeros_bytes(uint8_t *bytes, size_t len)
+{
+  unsigned int zeros = 0;
+  for (size_t i = 0; i < len; ++i) {
+    if (bytes[i] == 0) {
+      zeros += 8;
+    } else {
+      zeros += count_leading_zeros(bytes[i]) - 24;
+      break;
+    }
+  }
+  return zeros;
+}
+
 unsigned int count_trailing_zeros(uint32_t x) {
 #if __GNUC__
 #if __SIZEOF_LONG__ == 32 / 8

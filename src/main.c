@@ -53,7 +53,7 @@ void dp_found_dp(dp_trail_t const* trail, bool possibleCollision) {
   hex_str str_dp, str_y0;
   sprint_bytes_hex(trail->y0, str_y0);
   sprint_bytes_hex(trail->dp, str_dp);
-  printf("%s -> %s\n", str_y0, str_dp);
+  printf("%s -> %s (%" PRIu64 ")\n", str_y0, str_dp, trail->l);
 
   if (possibleCollision) {
     printf("Possible collision detected!\n");
@@ -67,7 +67,7 @@ void generate_random_bytes(size_t size, uint8_t bytes[size]) {
 }
 
 int main(int argc, char* argv[]) {
-  if (argc != 2) {
+  if (argc < 2) {
     printf("Usage: collider method\n");
     return -1;
   }
@@ -100,7 +100,28 @@ int main(int argc, char* argv[]) {
 
   } else if (strcmp(argv[1], "dp") == 0) {
     dp_find_collision_parallel(TRUNCATED_SIZE, hamming_truncated_md5,
-                               generate_random_bytes, 4, 74, m1, m2, NULL);
+                               generate_random_bytes, 4, 35, m1, m2, dp_found_dp);
+  } else if (strcmp(argv[1], "test") == 0) {
+    // test iteration speed
+    if (argc < 3) {
+      printf("Expecting iteration parameter!\n");
+      return -1;
+    }
+
+    unsigned long num_iterations = strtoul(argv[2], NULL, 10);
+
+    if (num_iterations == 0) {
+      printf("Invalid number of iterations: %s\n", argv[2]);
+      return -1;
+    }
+
+    printf("Running %lu hash iterations...\n", num_iterations);
+
+    uint8_t y0[TRUNCATED_SIZE];
+    generate_random_bytes(TRUNCATED_SIZE, y0);
+    for (unsigned long i = 0; i < num_iterations; ++i) {
+      truncated_md5(y0, TRUNCATED_SIZE, y0);
+    }
   } else {
     printf("Unknown method!\n");
     return -1;
@@ -134,13 +155,11 @@ void hamming_truncated_md5(uint8_t const* input, size_t input_len,
                            uint8_t output[TRUNCATED_SIZE]) {
   truncated_md5(input, input_len, output);
 
-  for (size_t i = 0; i < 2; ++i) {
+  for (size_t i = 0; i < 4; ++i) {
     hamming_correct_inplace16(output, i * 2);
   }
 
-  for (size_t i = 0; i < 8; ++i) {
-    hamming_correct_inplace8(output, 4 + i);
-  }
+  hamming_correct_inplace32(output, 8);
 }
 
 /**

@@ -54,7 +54,7 @@ void *trail_thread(void *arg) {
     } while (!dp_found);
 
     dp_trail_t *trail;
-    if (!dp_hash_table_find(&(data->dp_hash_table), y, data->hash_len,
+    if (! dp_hash_table_find(&(data->dp_hash_table), y + zero_bytes, data->hash_len - zero_bytes,
                             &trail)) {
       trail = dp_hash_table_add(&(data->dp_hash_table), y0, data->hash_len, y + zero_bytes,
                                 data->hash_len - zero_bytes, l);
@@ -63,7 +63,7 @@ void *trail_thread(void *arg) {
       }
     } else {
       dp_trail_t *trailTmp =
-          create_dp_trail(y0, data->hash_len, y, data->hash_len, l);
+          create_dp_trail(y0, data->hash_len, y + zero_bytes, data->hash_len - zero_bytes, l);
 
       pthread_mutex_lock(&(data->possible_collision_mutex));
       data->collision_trail_1 = trailTmp;

@@ -5,37 +5,11 @@
 #include <inttypes.h>
 #include <math.h>
 
-#include "configuration.h"
+#include "hash_function.h"
 #include "bitutils.h"
-#include "md5/md5.h"
 #include "brents.h"
 #include "distinguished_points.h"
-#include "hamming_code.h"
 
-void hamming_truncated_md5(uint8_t const* input, size_t input_len,
-                           uint8_t output[TRUNCATED_SIZE]);
-
-/**
- * @brief Computes a truncated md5 hash.
- * @param input the input buffer
- * @param input_len the length of the input buffer
- * @param output A buffer for the truncated hash ()
- */
-void truncated_md5(uint8_t const* input, size_t input_len,
-                   uint8_t output[TRUNCATED_SIZE]);
-
-/**
- * @brief A string for a hex representation. Used in conjunction with
- * sprint_bytes_hex()
- */
-typedef char hex_str[3 * TRUNCATED_SIZE];
-
-/**
- * @brief Create a hex representation of a byte array
- * @param bytes
- * @param str
- */
-void sprint_bytes_hex(uint8_t const bytes[TRUNCATED_SIZE], hex_str str);
 
 /**
  * @brief The callback of brent's algorithm. Print progress.
@@ -50,9 +24,9 @@ void brents_power_updated(unsigned int power);
  */
 void dp_found_dp(dp_trail_t const* trail, bool possibleCollision) {
   printf("Point found!\n");
-  hex_str str_dp, str_y0;
-  sprint_bytes_hex(trail->y0, str_y0);
-  sprint_bytes_hex(trail->dp, str_dp);
+  hash_str_t str_dp, str_y0;
+  sprint_hash_hex(trail->y0, str_y0);
+  sprint_hash_hex(trail->dp, str_dp);
   printf("%s -> %s (%" PRIu64 ")\n", str_y0, str_dp, trail->l);
 
   if (possibleCollision) {
@@ -61,7 +35,7 @@ void dp_found_dp(dp_trail_t const* trail, bool possibleCollision) {
 }
 
 void generate_random_bytes(size_t size, uint8_t bytes[size]) {
-  for (int i = 0; i < TRUNCATED_SIZE; ++i) {
+  for (int i = 0; i < size; ++i) {
     bytes[i] = rand();
   }
 }
@@ -72,35 +46,46 @@ int main(int argc, char* argv[]) {
     return -1;
   }
 
+  printf("Hash size is: %d\n", HASH_BYTES);
+
   struct timespec start_time, end_time;
   timespec_get(&start_time, TIME_UTC);
 
   srand((unsigned int)time(NULL));
 
-  uint8_t m1[TRUNCATED_SIZE];
-  uint8_t m2[TRUNCATED_SIZE];
+  hash_t m1;
+  hash_t m2;
 
   if (strcmp(argv[1], "b") == 0) {
     // generate random y0
-    uint8_t y0[TRUNCATED_SIZE];
-    generate_random_bytes(TRUNCATED_SIZE, y0);
+    uint8_t y0[HASH_BYTES];
+    generate_random_bytes(HASH_BYTES, y0);
 
-    hex_str y0_str;
-    sprint_bytes_hex(y0, y0_str);
+    hash_str_t y0_str;
+    sprint_hash_hex(y0, y0_str);
     printf("Random y0: %s\n", y0_str);
 
     printf("Starting cycle finding...\n");
     uint64_t lambda, mu;
 
-    brents_cycle_find_collision(TRUNCATED_SIZE, y0, hamming_truncated_md5,
+    brents_cycle_find_collision(HASH_BYTES, y0, hash_function,
                                 &lambda, &mu, m1, m2, brents_power_updated);
 
     printf("lambda: %" PRIu64 "\n", lambda);
     printf("mu:     %" PRIu64 "\n", mu);
 
   } else if (strcmp(argv[1], "dp") == 0) {
-    dp_find_collision_parallel(TRUNCATED_SIZE, hamming_truncated_md5,
-                               generate_random_bytes, 4, 35, m1, m2, dp_found_dp);
+    if (argc < 3) {
+      printf("Expecting dp property parameter (number of leading zeros)!\n");
+      return -1;
+    }
+
+    unsigned int num_leading_zeros = strtol(argv[2], NULL, 10);
+    printf("Using %u leading zeros as dp-property!\n", num_leading_zeros);
+
+    dp_find_collision_parallel(HASH_BYTES, hash_function,
+                               generate_random_bytes, 1, num_leading_zeros, m1,
+                               m2, NULL);
   } else if (strcmp(argv[1], "test") == 0) {
     // test iteration speed
     if (argc < 3) {
@@ -117,27 +102,30 @@ int main(int argc, char* argv[]) {
 
     printf("Running %lu hash iterations...\n", num_iterations);
 
-    uint8_t y0[TRUNCATED_SIZE];
-    generate_random_bytes(TRUNCATED_SIZE, y0);
+    uint8_t y0[HASH_BYTES];
+    generate_random_bytes(HASH_BYTES, y0);
     for (unsigned long i = 0; i < num_iterations; ++i) {
-      truncated_md5(y0, TRUNCATED_SIZE, y0);
+      hash_function(y0, HASH_BYTES, y0);
     }
   } else {
     printf("Unknown method!\n");
     return -1;
   }
 
-  hex_str m1_str, m2_str;
-  sprint_bytes_hex(m1, m1_str);
-  sprint_bytes_hex(m2, m2_str);
-  printf("m1: %s\n", m1_str);
-  printf("m2: %s\n", m2_str);
+  hash_t h1, h2;
+  hash_function(m1, HASH_BYTES, h1);
+  hash_function(m2, HASH_BYTES, h2);
 
-  uint8_t h1[TRUNCATED_SIZE], h2[TRUNCATED_SIZE];
-  truncated_md5(m1, TRUNCATED_SIZE, h1);
-  truncated_md5(m2, TRUNCATED_SIZE, h2);
+  hash_str_t m1_str, m2_str, h1_str, h2_str;
+  sprint_hash_hex(m1, m1_str);
+  sprint_hash_hex(m2, m2_str);
+  sprint_hash_hex(h1, h1_str);
+  sprint_hash_hex(h2, h2_str);
+  printf("m1: %s -> %s\n", m1_str, h1_str);
+  printf("m2: %s -> %s\n", m2_str, h2_str);
+
   printf("Hamming distance: %u\n",
-         hamming_distance_bytes(h1, h2, TRUNCATED_SIZE));
+         hamming_distance_bytes(h1, h2, HASH_BYTES));
 
   timespec_get(&end_time, TIME_UTC);
   printf("Computation took %ld seconds...\n",
@@ -151,37 +139,3 @@ void brents_power_updated(unsigned int power) {
   fflush(stdout);
 }
 
-void hamming_truncated_md5(uint8_t const* input, size_t input_len,
-                           uint8_t output[TRUNCATED_SIZE]) {
-  truncated_md5(input, input_len, output);
-
-  for (size_t i = 0; i < 4; ++i) {
-    hamming_correct_inplace16(output, i * 2);
-  }
-
-  hamming_correct_inplace32(output, 8);
-}
-
-/**
- * Size of a md5 hash in bytes
- */
-#define MD5_SIZE 128 / 8
-
-void truncated_md5(uint8_t const* input, size_t input_len,
-                   uint8_t output[TRUNCATED_SIZE]) {
-  md5_byte_t md5_out[MD5_SIZE];
-  md5_state_t state;
-  md5_init(&state);
-  md5_append(&state, input, input_len);
-  md5_finish(&state, md5_out);
-  memcpy(output, md5_out, TRUNCATED_SIZE);
-}
-
-void sprint_bytes_hex(uint8_t const bytes[TRUNCATED_SIZE], hex_str str) {
-  for (int i = 0; i < TRUNCATED_SIZE; ++i) {
-    str += sprintf(str, "%02X", (unsigned int)bytes[i]);
-    if (i != (TRUNCATED_SIZE - 1)) {
-      str += sprintf(str, " ");
-    }
-  }
-}

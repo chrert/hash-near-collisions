@@ -9,11 +9,14 @@ set(CMAKE_VERBOSE_MAKEFILE off)
 
 set(SOURCE_FILES
     main.c
+    hash_function.c
     brents.c
     distinguished_points.c
     bitutils.c
     hamming_code.c
     dp_hash_table.c)
+
+add_definitions(-DHASH_CONFIG=${HASH_CONFIG})
 
 add_executable(collider ${SOURCE_FILES})
 

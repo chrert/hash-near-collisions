@@ -22,11 +22,18 @@ void brents_power_updated(unsigned int power);
  * @param trail
  * @param possibleCollision
  */
-void dp_found_dp(dp_trail_t const* trail, bool possibleCollision) {
+void dp_found_dp(dp_trail_t const* trail, size_t dp_length, bool possibleCollision) {
   printf("Point found!\n");
-  hash_str_t str_dp, str_y0;
+
+  hash_str_t str_y0;
   sprint_hash_hex(trail->y0, str_y0);
-  sprint_hash_hex(trail->dp, str_dp);
+
+  hash_str_t str_dp;
+  hash_t dp = {0};
+  size_t dp_length_diff = HASH_BYTES - dp_length;
+  memcpy(dp + dp_length_diff, trail->dp, dp_length);
+  sprint_hash_hex(dp, str_dp);
+
   printf("%s -> %s (%" PRIu64 ")\n", str_y0, str_dp, trail->l);
 
   if (possibleCollision) {
@@ -84,7 +91,7 @@ int main(int argc, char* argv[]) {
     printf("Using %u leading zeros as dp-property!\n", num_leading_zeros);
 
     dp_find_collision_parallel(HASH_BYTES, hash_function,
-                               generate_random_bytes, 1, num_leading_zeros, m1,
+                               generate_random_bytes, 4, num_leading_zeros, m1,
                                m2, NULL);
   } else if (strcmp(argv[1], "test") == 0) {
     // test iteration speed
@@ -113,8 +120,8 @@ int main(int argc, char* argv[]) {
   }
 
   hash_t h1, h2;
-  hash_function(m1, HASH_BYTES, h1);
-  hash_function(m2, HASH_BYTES, h2);
+  truncated_md5(m1, HASH_BYTES, h1);
+  truncated_md5(m2, HASH_BYTES, h2);
 
   hash_str_t m1_str, m2_str, h1_str, h2_str;
   sprint_hash_hex(m1, m1_str);

@@ -10,8 +10,7 @@
  */
 #define MD5_SIZE 128 / 8
 
-void truncated_md5(uint8_t const* input, size_t input_len,
-                          hash_t output) {
+inline void truncated_md5(uint8_t const* input, size_t input_len, hash_t output) {
   md5_byte_t md5_out[MD5_SIZE];
   md5_state_t state;
   md5_init(&state);
@@ -26,16 +25,28 @@ void hash_function(uint8_t const* input, size_t input_len, hash_t output) {
   ;
 #elif HASH_CONFIG == CFG_80BIT_FULL
   ;
-#elif HASH_CONFIG == CFG_100BIT_EPS20_UNIFORM
-  for (size_t i = 0; i < 8; ++i) {
+#elif HASH_CONFIG == CFG_96BIT_EPS16_UNIFORM
+  for (size_t i = 0; i < 6; ++i) {
     hamming_correct_inplace8(output, i);
   }
-  hamming_correct_inplace16(output, 8);
-  hamming_correct_inplace16(output, 10);
-#elif HASH_CONFIG == CFG_88BIT_EPS8_UNIFORM
-  //hamming_correct_inplace64(output, 0);
-  for (size_t i = 0; i < 8; ++i) {
+  hamming_correct_inplace16(output, 6);
+  hamming_correct_inplace32(output, 8);
+#elif HASH_CONFIG == CFG_96BIT_EPS16_SECOND
+  for (size_t i = 0; i < 4; ++i) {
     hamming_correct_inplace8(output, i);
+  }
+  for (size_t i = 0; i < 4; ++i) {
+    hamming_correct_inplace16(output, 4 + 2 * i);
+  }
+#elif HASH_CONFIG == CFG_88BIT_EPS8_UNIFORM
+  hamming_correct_inplace32(output, 0);
+  hamming_correct_inplace32(output, 4);
+  hamming_correct_inplace16(output, 8);
+  hamming_correct_inplace8(output, 10);
+#elif HASH_CONFIG == CFG_88BIT_EPS8_SECOND
+  hamming_correct_inplace64(output, 0);
+  for (size_t i = 0; i < 3; ++i) {
+    hamming_correct_inplace8(output, 8 + i);
   }
 #endif
 }

@@ -5,6 +5,7 @@
 
 #include <string.h>
 #include <pthread.h>
+#include <math.h>
 
 #include "dp_hash_table.h"
 #include "bitutils.h"
@@ -12,6 +13,7 @@
 typedef struct {
   size_t const hash_len;
   unsigned int const num_leading_zeros;
+  uint64_t max_trail_length;
   dp_hash_function_t const h;
   dp_random_byte_generator_t const rnd;
   dp_callback_t const point_found_callback;
@@ -35,6 +37,7 @@ void *trail_thread(void *arg) {
 
   size_t zero_bytes = (data->num_leading_zeros / 8);
   size_t bytes_to_check = zero_bytes + (data->num_leading_zeros % 8 != 0);
+  size_t dp_length = data->hash_len - zero_bytes;
 
   while (true) {
     pthread_testcancel();
@@ -46,33 +49,38 @@ void *trail_thread(void *arg) {
 
     do {
       data->h(y, data->hash_len, y);
-      ++l;
-      // TODO: stop if too long
 
-      dp_found = count_leading_zeros_bytes(y, bytes_to_check) >= data->num_leading_zeros;
+      dp_found = count_leading_zeros_bytes(y, bytes_to_check) >=
+                 data->num_leading_zeros;
+
+      if (++l == data->max_trail_length) {
+        break;
+      }
 
     } while (!dp_found);
 
-    dp_trail_t *trail;
-    if (! dp_hash_table_find(&(data->dp_hash_table), y + zero_bytes, data->hash_len - zero_bytes,
-                            &trail)) {
-      trail = dp_hash_table_add(&(data->dp_hash_table), y0, data->hash_len, y + zero_bytes,
-                                data->hash_len - zero_bytes, l);
-      if (data->point_found_callback) {
-        data->point_found_callback(trail, false);
-      }
-    } else {
-      dp_trail_t *trailTmp =
-          create_dp_trail(y0, data->hash_len, y + zero_bytes, data->hash_len - zero_bytes, l);
+    if (dp_found) {
+      dp_trail_t *trail;
+      if (!dp_hash_table_find(&(data->dp_hash_table), y + zero_bytes, dp_length,
+                              &trail)) {
+        trail = dp_hash_table_add(&(data->dp_hash_table), y0, data->hash_len,
+                                  y + zero_bytes, dp_length, l);
+        if (data->point_found_callback) {
+          data->point_found_callback(trail, dp_length, false);
+        }
+      } else {
+        dp_trail_t *trailTmp =
+            create_dp_trail(y0, data->hash_len, y + zero_bytes, dp_length, l);
 
-      pthread_mutex_lock(&(data->possible_collision_mutex));
-      data->collision_trail_1 = trailTmp;
-      data->collision_trail_2 = trail;
-      pthread_cond_signal(&(data->possible_collision_cv));
-      pthread_mutex_unlock(&(data->possible_collision_mutex));
+        pthread_mutex_lock(&(data->possible_collision_mutex));
+        data->collision_trail_1 = trailTmp;
+        data->collision_trail_2 = trail;
+        pthread_cond_signal(&(data->possible_collision_cv));
+        pthread_mutex_unlock(&(data->possible_collision_mutex));
 
-      if (data->point_found_callback) {
-        data->point_found_callback(trailTmp, true);
+        if (data->point_found_callback) {
+          data->point_found_callback(trailTmp, dp_length, true);
+        }
       }
     }
   }
@@ -86,13 +94,16 @@ void dp_find_collision_parallel(size_t hash_len, dp_hash_function_t h,
                                 unsigned int num_leading_zeros,
                                 uint8_t m1[hash_len], uint8_t m2[hash_len],
                                 dp_callback_t point_found_callback) {
-  TRAIL_THREAD_DATA trail_thread_data = { .hash_len = hash_len,
-                                          .num_leading_zeros =
-                                              num_leading_zeros,
-                                          .point_found_callback =
-                                              point_found_callback,
-                                          .rnd = rnd,
-                                          .h = h };
+
+  TRAIL_THREAD_DATA trail_thread_data = {
+    .hash_len = hash_len,
+    .num_leading_zeros = num_leading_zeros,
+    .point_found_callback = point_found_callback,
+    .rnd = rnd,
+    .h = h,
+    .max_trail_length =
+        20 * (pow(2, hash_len * 8) / pow(2, hash_len * 8 - num_leading_zeros))
+  };
 
   dp_hash_table_init(&(trail_thread_data.dp_hash_table));
 

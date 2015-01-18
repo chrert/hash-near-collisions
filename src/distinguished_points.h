@@ -41,7 +41,7 @@ typedef struct {
  * @brief Callback function for dp_find_collision_parallel()
  */
 typedef void (*dp_callback_t)(dp_trail_t const *found_trail,
-                              bool possibleCollision);
+                              size_t dp_length, bool possibleCollision);
 
 /**
  * @brief Performs a parallel collision search based on distinguished points

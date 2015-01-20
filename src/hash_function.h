@@ -11,9 +11,10 @@
 #define CFG_64BIT_EPS2 5
 #define CFG_88BIT_EPS8_SECOND 6
 #define CFG_96BIT_EPS16_SECOND 7
+#define CFG_128BIT_EPS16 8
 
 #ifndef HASH_CONFIG
-#error Please define HASH_CONFIG! Possible values: TODO
+#error Please define HASH_CONFIG! See hash_function.h
 #endif
 
 #if HASH_CONFIG == CFG_MD5_FULL
@@ -28,6 +29,8 @@
 #define HASH_BYTES (88 / 8)
 #elif HASH_CONFIG == CFG_96BIT_EPS16_SECOND
 #define HASH_BYTES (96 / 8)
+#elif HASH_CONFIG == CFG_128BIT_EPS16
+#define HASH_BYTES (128 / 8)
 #endif
 
 #ifndef HASH_BYTES

@@ -29,6 +29,8 @@
 #define HASH_BYTES (88 / 8)
 #elif HASH_CONFIG == CFG_96BIT_EPS16_SECOND
 #define HASH_BYTES (96 / 8)
+#elif HASH_CONFIG == CFG_64BIT_EPS2
+#define HASH_CONFIG (64/8)
 #elif HASH_CONFIG == CFG_128BIT_EPS16
 #define HASH_BYTES (128 / 8)
 #endif

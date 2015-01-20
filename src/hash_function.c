@@ -48,6 +48,8 @@ void hash_function(uint8_t const* input, size_t input_len, hash_t output) {
   for (size_t i = 0; i < 3; ++i) {
     hamming_correct_inplace8(output, 8 + i);
   }
+#elif HASH_CONFIG == CFG_64BIT_EPS2
+  hamming_correct_inplace64(output, 0);
 #elif HASH_CONFIG == CFG_128BIT_EPS16
   for (size_t i = 0; i < 8; ++i) {
     hamming_correct_inplace16(output, 2*i);

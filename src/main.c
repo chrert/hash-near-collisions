@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
 
     dp_find_collision_parallel(HASH_BYTES, hash_function,
                                generate_random_bytes, num_threads, num_leading_zeros, m1,
-                               m2, NULL);
+                               m2, dp_found_dp);
   } else if (strcmp(argv[1], "test") == 0) {
     // test iteration speed
     if (argc < 3) {

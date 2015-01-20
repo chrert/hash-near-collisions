@@ -49,7 +49,7 @@ void generate_random_bytes(size_t size, uint8_t bytes[size]) {
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
-    printf("Usage: collider method\n");
+    printf("Usage: %s METHOD\n", argv[0]);
     return -1;
   }
 
@@ -82,16 +82,22 @@ int main(int argc, char* argv[]) {
     printf("mu:     %" PRIu64 "\n", mu);
 
   } else if (strcmp(argv[1], "dp") == 0) {
-    if (argc < 3) {
-      printf("Expecting dp property parameter (number of leading zeros)!\n");
+    if (argc < 4) {
+      printf("Usage: %s dp NUM_THREADS NUM_LEADING_ZEROS\n", argv[0]);
       return -1;
     }
 
-    unsigned int num_leading_zeros = strtol(argv[2], NULL, 10);
+    unsigned int num_threads = strtol(argv[2], NULL, 10);
+    if (num_threads == 0) {
+      printf("Usage: %s NUM_THREADS NUM_LEADING_ZEROS\n", argv[0]);
+      return -1;
+    }
+
+    unsigned int num_leading_zeros = strtol(argv[3], NULL, 10);
     printf("Using %u leading zeros as dp-property!\n", num_leading_zeros);
 
     dp_find_collision_parallel(HASH_BYTES, hash_function,
-                               generate_random_bytes, 4, num_leading_zeros, m1,
+                               generate_random_bytes, num_threads, num_leading_zeros, m1,
                                m2, NULL);
   } else if (strcmp(argv[1], "test") == 0) {
     // test iteration speed

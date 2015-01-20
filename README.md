@@ -35,8 +35,8 @@ For brents algorithm, there are no configuration parameters:
 ./collider b
 ```
 
-The distinguished point algorithm can be configured by the number of threads to use and the number of leading zeros to use as the distinguished point property. This will run the distinguished point algorithm with 4 threads and 30 leading zeros:
+The distinguished point algorithm can be configured by the number of threads to use and the number of leading zeros to use as the distinguished point property. This will run the distinguished point algorithm with 4 threads and 20 leading zeros:
 
 ```
-./collider dp 4 30
+./collider dp 4 20
 ```
